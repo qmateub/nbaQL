@@ -15,6 +15,9 @@ import pubsub from './src/graphql/subscriptions';
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 const app = express();
 
+/* eslint-disable no-undef */
+const PORT = process.env.PORT || 5000;
+
 app.use(
   '/graphql',
   cors(),
@@ -39,16 +42,18 @@ app.use(
   '/graphiql',
   graphiqlExpress({
     endpointURL: '/graphql',
-    subscriptionsEndpoint: 'ws://localhost:5000/subscriptions',
+    subscriptionsEndpoint: `ws://localhost:${PORT}/subscriptions`,
   })
 );
 
 const graphQLServer = createServer(app);
 
-graphQLServer.listen('5000', () => {
-  console.log('GraphQL Server is now running on http://localhost:5000/graphql');
+graphQLServer.listen(PORT, () => {
   console.log(
-    'GraphQL Subscriptions are now running on ws://localhost:5000/subscriptions'
+    `GraphQL Server is now running on http://localhost:${PORT}/graphql`
+  );
+  console.log(
+    `GraphQL Subscriptions are now running on ws://localhost:${PORT}/subscriptions`
   );
 
   const plays = [];
