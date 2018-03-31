@@ -10,29 +10,28 @@ type Player {
 type Team {
   teamId: String!
   teamLogo: String
-  city: String!
-  name: String!
-  abbreviation: String!
+  tricode: String!
 }
 
 type Play {
-  eventnum: Int!
-  homedescription: String
-  neutraldescription: String
-  visitordescription: String
-  involvedPlayers: [Player]
+  playId: Int!
+  quarter: Int!
+  clock: String!
+  eventMsgType: String!
+  description: String!
+  player: Player
+  team: Team
+  visitorTeamScore: String!
+  homeTeamScore: String!
 }
 
 type Game {
   gameId: String!
-  gameDate: String!
+  startDateEastern: String!
   visitorTeam: Team!
   homeTeam: Team!
   plays: [Play!]
-  gameStatus: Int!
-  gameStatusText: String!
-  isAvailable: Int!
-  ptXyzAvailable: Int!
+  statusNum: Int!
 }
 
 type Subscription {

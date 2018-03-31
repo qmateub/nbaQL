@@ -1,24 +1,20 @@
 import axios from 'axios';
-import transformResponse from '../../utils/nba-api-response-transformer';
 import pubsub from './subscriptions';
 
 export default {
   Query: {
-    players: async (parent, args, context) => {
+    players: async (obj, args, context) => {
       const players = await context.playerLoader.load(1);
 
       if (args.ids)
         return players.filter(player => args.ids.includes(player.playerId));
       return players;
     },
-    games: (parent, args) => {
+    games: (obj, args) => {
+      const gameDate = args.gameDate.split('-').join('');
       return axios
-        .get(
-          `http://stats.nba.com/stats/videoStatus?LeagueID=00&GameDate=${
-            args.gameDate
-          }`
-        )
-        .then(response => transformResponse(response.data));
+        .get(`http://data.nba.net/prod/v2/${gameDate}/scoreboard.json`)
+        .then(response => response.data.games);
     },
   },
   Subscription: {
@@ -26,45 +22,84 @@ export default {
   },
 
   Game: {
-    visitorTeam: obj => ({
-      teamId: obj.visitorTeamId,
-      teamLogo: `http://i.cdn.turner.com/nba/nba/assets/logos/teams/primary/web/${
-        obj.visitorTeamAbbreviation
-      }.svg`,
-      city: obj.visitorTeamCity,
-      name: obj.visitorTeamName,
-      abbreviation: obj.visitorTeamAbbreviation,
-    }),
-    homeTeam: obj => ({
-      teamId: obj.homeTeamId,
-      teamLogo: `http://i.cdn.turner.com/nba/nba/assets/logos/teams/primary/web/${
-        obj.homeTeamAbbreviation
-      }.svg`,
-      city: obj.homeTeamCity,
-      name: obj.homeTeamName,
-      abbreviation: obj.homeTeamAbbreviation,
-    }),
+    visitorTeam: async (obj, args, context) => {
+      const teams = await context.teamLoader.load(1);
+      const team = teams.find(team => team.teamId === obj.vTeam.teamId);
+
+      return {
+        ...team,
+        teamLogo: `http://i.cdn.turner.com/nba/nba/assets/logos/teams/primary/web/${
+          team.tricode
+        }.svg`,
+      };
+    },
+    homeTeam: async (obj, args, context) => {
+      const teams = await context.teamLoader.load(1);
+      const team = teams.find(team => team.teamId === obj.hTeam.teamId);
+
+      return {
+        ...team,
+        teamLogo: `http://i.cdn.turner.com/nba/nba/assets/logos/teams/primary/web/${
+          team.tricode
+        }.svg`,
+      };
+    },
     plays: obj => {
-      return axios
-        .get(
-          `http://stats.nba.com/stats/playbyplayv2?GameId=${
-            obj.gameId
-          }&StartPeriod=0&EndPeriod=10`
+      const playsQuarter1 = axios.get(
+        `http://data.nba.net/prod/v1/${obj.startDateEastern}/${
+          obj.gameId
+        }_pbp_1.json`
+      );
+      const playsQuarter2 = axios.get(
+        `http://data.nba.net/prod/v1/${obj.startDateEastern}/${
+          obj.gameId
+        }_pbp_2.json`
+      );
+      const playsQuarter3 = axios.get(
+        `http://data.nba.net/prod/v1/${obj.startDateEastern}/${
+          obj.gameId
+        }_pbp_3.json`
+      );
+      const playsQuarter4 = axios.get(
+        `http://data.nba.net/prod/v1/${obj.startDateEastern}/${
+          obj.gameId
+        }_pbp_4.json`
+      );
+
+      let playId = 0;
+
+      return Promise.all([
+        playsQuarter1,
+        playsQuarter2,
+        playsQuarter3,
+        playsQuarter4,
+      ]).then(responses =>
+        responses.reduce(
+          (plays, response, index) => [
+            ...plays,
+            ...response.data.plays.map(play => ({
+              ...play,
+              playId: String(playId++),
+              quarter: index + 1,
+              visitorTeamScore: play.vTeamScore,
+              homeTeamScore: play.hTeamScore,
+            })),
+          ],
+          []
         )
-        .then(response => transformResponse(response.data));
+      );
     },
   },
   Play: {
-    involvedPlayers: async (obj, args, context) => {
+    player: async (obj, args, context) => {
       const players = await context.playerLoader.load(1);
 
-      const filters = [obj.player1Id, obj.player2Id, obj.player3Id].filter(
-        Boolean
-      );
+      return players.find(player => player.playerId === obj.personId);
+    },
+    team: async (obj, args, context) => {
+      const teams = await context.teamLoader.load(1);
 
-      return filters.length > 0
-        ? players.filter(player => filters.includes(parseInt(player.playerId)))
-        : [];
+      return teams.find(team => team.teamId === obj.teamId);
     },
   },
   Player: {

@@ -7,10 +7,10 @@ import { execute, subscribe } from 'graphql';
 import { createServer } from 'http';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import DataLoader from 'dataloader';
-import { fetchPlayers } from './utils/nba-api';
-import typeDefs from './src/graphql/schema';
-import resolvers from './src/graphql/resolvers';
-import pubsub from './src/graphql/subscriptions';
+import { fetchPlayers, fetchTeams } from './utils/nba-api';
+import typeDefs from './graphql/schema';
+import resolvers from './graphql/resolvers';
+import pubsub from './graphql/subscriptions';
 
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 const app = express();
@@ -30,6 +30,13 @@ app.use(
         async () => {
           const players = await fetchPlayers();
           return [players];
+        },
+        { batch: false }
+      ),
+      teamLoader: new DataLoader(
+        async () => {
+          const teams = await fetchTeams();
+          return [teams];
         },
         { batch: false }
       ),
