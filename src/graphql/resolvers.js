@@ -104,8 +104,19 @@ export default {
   },
   Player: {
     image: obj =>
-      `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${
-        obj.playerId
-      }.png`,
+      axios
+        .get(
+          `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${
+            obj.playerId
+          }.png`
+        )
+        .then(
+          () =>
+            `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${
+              obj.playerId
+            }.png`,
+          () =>
+            'http://i.cdn.turner.com/nba/nba/.element/img/2.0/sect/statscube/players/large/default_nba_headshot_v2.png'
+        ),
   },
 };

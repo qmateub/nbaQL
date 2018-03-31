@@ -11,9 +11,6 @@ export const fetchPlayers = () => {
         )
         .map(player => ({
           playerId: player.personId,
-          image: `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${
-            player.personId
-          }.png`,
           ...player,
         }))
     );
