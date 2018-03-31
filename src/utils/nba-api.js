@@ -6,6 +6,9 @@ export const fetchPlayers = () => {
     .then(response =>
       response.data.league.standard
         .filter(player => player.teams.length > 0)
+        .filter(
+          player => player.teams[player.teams.length - 1].seasonEnd === '2017'
+        )
         .map(player => ({
           playerId: player.personId,
           image: `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${
